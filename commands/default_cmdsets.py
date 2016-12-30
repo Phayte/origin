@@ -16,7 +16,7 @@ own cmdsets by inheriting from them or directly from `evennia.CmdSet`.
 
 from evennia import default_cmds
 
-from commands.command import CmdConstruct, CmdBoard
+from commands.construct import CmdConstruct, CmdBoard
 
 
 class CharacterCmdSet(default_cmds.CharacterCmdSet):

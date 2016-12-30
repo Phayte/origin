@@ -16,3 +16,7 @@ def is_none(*args):
             return arg
 
     return None
+
+
+def is_exit(obj):
+    return obj.destination

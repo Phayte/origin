@@ -7,9 +7,10 @@ for allowing Characters to traverse the exit to its destination.
 
 """
 from evennia.objects.objects import DefaultExit
+from evennia.utils import lazy_property
 
 from commands.command import ExitCommand
-from utils.utils import is_none
+from handlers.exits import ExitRoleplayHandler
 
 
 class Exit(DefaultExit):
@@ -41,30 +42,49 @@ class Exit(DefaultExit):
     exit_command = ExitCommand
 
     def at_object_creation(self):
+        """
+        Departs will always be used since that is the exit tied with where players were last
+        at. However, the arrival message will need to be deteremined by if return_exit exists.
+
+        :return:
+        """
         self.return_exit = None
 
-        self.db.on_success_arrive = None
-        self.db.on_o_success_arrive = "has arrived."
+        # # region Movement Descriptors
+        # self.db.on_success_arrive = None
+        # self.db.on_o_success_arrive = "has arrived."
+        #
+        # self.db.on_success_depart = None
+        # self.db.on_o_success_depart = "has departed."
+        #
+        # self.db.on_fail_depart = "You cannot there."
+        # self.db.on_o_fail_depart = None
+        # # endregion
 
-        self.db.on_success_depart = None
-        self.db.on_o_success_depart = "has departed."
+    def at_traverse(self, traversing_object, destination):
 
-        self.db.on_fail_depart = "You cannot there."
-        self.db.on_o_fail_depart = None
+        source_location = traversing_object.location
+        target_location = destination
 
-        self.db.sync_exit = False
+        if traversing_object.move_to(target_location):
+            self.at_after_traverse(traversing_object, source_location)
+        else:
+            self.at_failed_traverse(traversing_object)
 
-        self.db.is_lockable = False
-        self.db.on_lock = None
-        self.db.on_o_lock = None
-        self.db.on_unlock = None
-        self.db.on_o_unlock = None
+    def at_failed_traverse(self, traversing_object):
+        exit_obj = traversing_object.ndb.last_exit
+        location = traversing_object.location
 
-        self.db.is_closeable = False
-        self.db.on_open = None
-        self.db.on_o_open = None
-        self.db.on_close = None
-        self.db.on_o_close = None
+        if exit_obj:
+            for obj in location.contents:
+                if obj == self:
+                    obj.msg(exit_obj.rp.get_success_depart())
+                else:
+                    obj.msg(exit_obj.rp.get_o_success_depart(self, obj))
+
+            del traversing_object.ndb.last_exit
+        else:
+            traversing_object.msg("You cannot go there.")
 
     # noinspection PyMethodOverriding
     def delete(self):
@@ -73,16 +93,7 @@ class Exit(DefaultExit):
         super(Exit, self).delete()
         return True
 
-    def at_traverse(self, traversing_object, destination):
-
-        source_location = traversing_object.location
-        target_location = destination # TODO is_none(destination.location, destination)
-
-        if traversing_object.move_to(target_location):
-            self.at_after_traverse(traversing_object, source_location)
-        else:
-            self.at_failed_traverse(traversing_object)
-
+    # region Properties
     @property
     def return_exit(self):
         return self.db.return_exit
@@ -91,115 +102,65 @@ class Exit(DefaultExit):
     def return_exit(self, value):
         self.db.return_exit = value
 
-    def sync_exit(self):
-        self.db.sync_exit = True
+    @return_exit.deleter
+    def return_exit(self):
+        del self.db.return_exit
 
-    def unsync_exit(self):
-        self.db.sync_exit = False
+    # @lazy_property
+    # def access(self):
+    #     pass
+    #     #return ExitAccessHandler(self)
+    #
+    @lazy_property
+    def rp(self):
+        return ExitRoleplayHandler(self)
+    # endregion
 
-    def close_exit(self):
-        if self.db.sync_exit:
-            pass
-
-    def open_exit(self):
-        pass
-
-    def lock_exit(self):
-        pass
-
-    def unlock_exit(self):
-        pass
-
-    def get_arrive(self):
-        return self._get_message(self.db.on_success_arrive)
-
-    def get_o_arrive(self, traversing_object, viewer):
-        return self._get_o_message(
-            self.db.on_o_success_arrive,
-            traversing_object,
-            viewer
-        )
-
-    def get_success_depart(self):
-        return self._get_message(self.db.on_success_depart)
-
-    def get_o_success_depart(self, traversing_object, viewer):
-        return self._get_o_message(
-            self.db.on_o_success_depart,
-            traversing_object,
-            viewer
-        )
-
-    def get_fail_depart(self):
-        return self._get_message(self.db.on_fail_depart)
-
-    def get_o_fail_depart(self, traversing_object, viewer):
-        return self._get_o_message(
-            self.db.on_on_scucces_arrive,
-            traversing_object,
-            viewer
-        )
+    # def get_arrive(self):
+    #     arrive_exit = is_none(self.return_exit, self)
+    #     # noinspection PyProtectedMember
+    #     return arrive_exit._get_message(arrive_exit.db.on_success_arrive)
+    #
+    # def get_o_arrive(self, traversing_object, viewer):
+    #     return self._get_o_message(
+    #         self.db.on_o_success_arrive,
+    #         traversing_object,
+    #         viewer
+    #     )
+    #
+    # def get_success_depart(self):
+    #     return self._get_message(self.db.on_success_depart)
+    #
+    # def get_o_success_depart(self, traversing_object, viewer):
+    #     return self._get_o_message(
+    #         self.db.on_o_success_depart,
+    #         traversing_object,
+    #         viewer
+    #     )
+    #
+    # def get_fail_depart(self):
+    #     return self._get_message(self.db.on_fail_depart)
+    #
+    # def get_o_fail_depart(self, traversing_object, viewer):
+    #     return self._get_o_message(
+    #         self.db.on_on_scucces_arrive,
+    #         traversing_object,
+    #         viewer
+    #     )
 
     @staticmethod
-    def _get_message(message):
-        return is_none(message)
+    def format_exit_key(exit_obj):
+        return exit_obj.db_key.strip().lower()
 
-    @staticmethod
-    def _get_o_message(message, traversing_object, viewer):
-        if not message:
-            return None
-        return "{0} {1}".format(traversing_object.get_display_name(viewer), message)
+    # @staticmethod
+    # def _get_message(message):
+    #     return message
+    #
+    # @staticmethod
+    # def _get_o_message(message, traversing_object, viewer):
+    #     if not message:
+    #         return None
+    #     return "{0} {1}".format(traversing_object.get_display_name(viewer),
+    #                             message)
 
-        # def at_traverse(self, traversing_object, target_location):
-        #     """
-        #     Override the traver se method in order to account for non-room
-        #     objects. This would allow a portal into a moving entity.
-        #
-        #     Args:
-        #         traversing_object (Object): Object traversing us.
-        #         target_location (Object): The location or location's location to go
-        #
-        #     """
-        #     target_origin = traversing_object.location
-        #     target_destination = is_none(target_location.location, target_location)
-        #
-        #     if traversing_object.move_to(target_destination):
-        #         self.announce_success_departure(traversing_object, target_origin)
-        #         self.announce_arrival(traversing_object, target_destination)
-        #     else:
-        #         self.announce_fail_departure(traversing_object, target_origin)
-
-        # # TODO: This is wrong should use return exist success_arrive
-        # def announce_arrival(self, traversing_object, location):
-        #     if not self.db.return_exit:
-        #         return
-        #
-        #     arrival_exit = self.db.return_exit
-        #     for obj in location.contents:
-        #         if obj == traversing_object and arrival_exit.success_arrive:
-        #             obj.msg(arrival_exit.success_arrive)
-        #         elif obj != traversing_object and arrival_exit.o_success_arrive:
-        #             obj.msg("{0} {1}".format(obj.get_display_name(
-        #                 traversing_object), arrival_exit.o_success_arrive))
-        #
-        # def announce_success_departure(self, traversing_object, location):
-        #     depart_exit = self
-        #     for obj in location.contents:
-        #         if obj == traversing_object and depart_exit.db.success_depart:
-        #             obj.msg(depart_exit.db.success_depart)
-        #         elif obj != traversing_object and depart_exit.db.o_success_depart:
-        #             obj.msg("{0} {1}".format(traversing_object.get_display_name(
-        #                 obj), depart_exit.db.o_success_depart))
-        #
-        # def announce_fail_departure(self, traversing_object, location):
-        #     depart_exit = self
-        #     for obj in location.contents:
-        #         if obj == traversing_object and depart_exit.db.fail_depart:
-        #             obj.msg(depart_exit.db.fail_depart)
-        #         elif obj != traversing_object and depart_exit.db.o_fail_depart:
-        #             obj.msg("{0} {1}".format(traversing_object.get_display_name(
-        #                 obj), depart_exit.db.o_fail_depart))
-
-
-class LockableExit(Exit):
     pass

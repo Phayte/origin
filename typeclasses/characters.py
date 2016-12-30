@@ -7,7 +7,8 @@ is setup to be the "default" character type created by the default
 creation commands.
 
 """
-from evennia import DefaultCharacter
+from evennia.objects.objects import DefaultCharacter
+
 
 class Character(DefaultCharacter):
     """
@@ -29,6 +30,7 @@ class Character(DefaultCharacter):
     at_post_puppet - Echoes "PlayerName has entered the game" to the room.
 
     """
+
     @property
     def last_exit(self):
         return self.ndb.last_exit
@@ -48,38 +50,34 @@ class Character(DefaultCharacter):
         )
 
     def announce_move_to(self, source_location):
-        exit_obj = None
-        if self.last_exit and self.last_exit.return_exit:
-            exit_obj = self.last_exit.return_exit
-
         self._announce_arrive(
             self.location,
-            exit_obj
+            self.last_exit
         )
 
     def _announce_depart(self, location, exit_obj):
         if exit_obj:
             for obj in location.contents:
                 if obj == self:
-                    obj.msg(exit_obj.get_success_depart())
+                    obj.msg(exit_obj.rp.get_success_depart())
                 else:
-                    obj.msg(exit_obj.get_o_success_depart(self, obj))
+                    obj.msg(exit_obj.rp.get_o_success_depart(self, obj))
         else:
             for obj in location.contents:
                 if obj != self:
-                    obj.msg("{0} has disappeared.".format(self.get_display_name(obj)))
+                    obj.msg("{0} has disappeared.".format(
+                        self.get_display_name(obj)))
 
     def _announce_arrive(self, location, exit_obj):
         if exit_obj:
-            self.msg("Have")
-            for obj in location.contents:
-                if obj == self:
-                    obj.msg(exit_obj.get_arrive())
+            for content_obj in location.contents:
+                if content_obj == self:
+                    content_obj.msg(exit_obj.rp.get_arrive())
                 else:
-                    obj.msg(exit_obj.get_o_arrive(self, obj))
+                    content_obj.msg(exit_obj.rp.get_o_arrive(self, content_obj))
         else:
             self.msg("Have Not")
-            for obj in location.contents:
-                if obj != self:
-                    obj.msg("{0} has appeared.".format(self.get_display_name(obj)))
-
+            for content_obj in location.contents:
+                if content_obj != self:
+                    content_obj.msg("{0} has appeared.".format(
+                        self.get_display_name(content_obj)))

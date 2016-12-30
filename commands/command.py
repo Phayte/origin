@@ -5,13 +5,7 @@ Commands describe the input the player can do to the game.
 
 """
 
-from evennia import Command as BaseCommand
-
-# from evennia import default_cmds
-from evennia.commands.cmdset import CmdSet
-from evennia.commands.default.building import ObjManipCommand
-from evennia.commands.default.muxcommand import MuxCommand
-from evennia.utils.create import create_object
+from evennia.commands.command import Command as BaseCommand
 
 
 class Command(BaseCommand):
@@ -195,7 +189,6 @@ class ExitCommand(Command):
     the object it is attached to.
 
     """
-    obj = None
 
     def func(self):
         """
@@ -214,6 +207,7 @@ class ExitCommand(Command):
         # TODO: possible delete temp var
         del self.caller.last_exit
 
+    # noinspection PyUnusedLocal
     def get_extra_info(self, caller, **kwargs):
         """
         Shows a bit of information on where the exit leads.
@@ -231,54 +225,3 @@ class ExitCommand(Command):
                 caller)
         else:
             return " (%s)" % self.obj.get_display_name(caller)
-
-
-class CmdConstruct(Command):
-    key = "construct"
-    help_category = "Construct"
-
-    def func(self):
-        construct = create_object(
-            "typeclasses.construct.Construct",
-            key="Ship",
-            location=self.caller.location
-        )
-        self.caller.msg("Created construct #{0}".format(construct.id))
-
-        construct_module = construct.create_module("Airlock Room")
-        self.caller.msg("Created module #{0}".format(construct_module.id))
-
-        construct_exit = construct.create_exit("Airlock Exit", construct_module)
-        self.caller.msg("Created exit #{0}".format(construct_exit.id))
-
-
-class CmdBoard(ObjManipCommand):
-    key = "board"
-    help_category = "Construct"
-
-    def func(self):
-        caller = self.caller
-        if not self.args:
-            caller.msg("Usage: board ship[/entrance]")
-            return
-
-        construct_name = self.lhs_objattr[0]['name']
-        exit_name = self.lhs_objattr[0]['attrs']
-
-        if len(exit_name) > 1:
-            caller.msg("You can only specify one entrance.")
-
-        construct = self.caller.search(construct_name)
-        if not construct:
-            return
-
-        construct_exit = self.caller.search(exit_name[0], location=construct)
-        if not construct_exit:
-            return
-
-        caller.execute_cmd(construct.get_exit_command_key(construct_exit.key))
-
-
-class CmdSetConstruct(CmdSet):
-    def at_cmdset_creation(self):
-        self.add(CmdConstruct)
