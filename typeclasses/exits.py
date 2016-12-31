@@ -10,7 +10,7 @@ from evennia.objects.objects import DefaultExit
 from evennia.utils import lazy_property
 
 from commands.command import ExitCommand
-from handlers.exits import ExitRoleplayHandler
+from handlers.exits import ExitRoleplayHandler, ExitAccessHandler
 
 
 class Exit(DefaultExit):
@@ -49,17 +49,6 @@ class Exit(DefaultExit):
         :return:
         """
         self.return_exit = None
-
-        # # region Movement Descriptors
-        # self.db.on_success_arrive = None
-        # self.db.on_o_success_arrive = "has arrived."
-        #
-        # self.db.on_success_depart = None
-        # self.db.on_o_success_depart = "has departed."
-        #
-        # self.db.on_fail_depart = "You cannot there."
-        # self.db.on_o_fail_depart = None
-        # # endregion
 
     def at_traverse(self, traversing_object, destination):
 
@@ -106,61 +95,17 @@ class Exit(DefaultExit):
     def return_exit(self):
         del self.db.return_exit
 
-    # @lazy_property
-    # def access(self):
-    #     pass
-    #     #return ExitAccessHandler(self)
-    #
+    @lazy_property
+    def access(self):
+        return ExitAccessHandler(self)
+
     @lazy_property
     def rp(self):
         return ExitRoleplayHandler(self)
     # endregion
 
-    # def get_arrive(self):
-    #     arrive_exit = is_none(self.return_exit, self)
-    #     # noinspection PyProtectedMember
-    #     return arrive_exit._get_message(arrive_exit.db.on_success_arrive)
-    #
-    # def get_o_arrive(self, traversing_object, viewer):
-    #     return self._get_o_message(
-    #         self.db.on_o_success_arrive,
-    #         traversing_object,
-    #         viewer
-    #     )
-    #
-    # def get_success_depart(self):
-    #     return self._get_message(self.db.on_success_depart)
-    #
-    # def get_o_success_depart(self, traversing_object, viewer):
-    #     return self._get_o_message(
-    #         self.db.on_o_success_depart,
-    #         traversing_object,
-    #         viewer
-    #     )
-    #
-    # def get_fail_depart(self):
-    #     return self._get_message(self.db.on_fail_depart)
-    #
-    # def get_o_fail_depart(self, traversing_object, viewer):
-    #     return self._get_o_message(
-    #         self.db.on_on_scucces_arrive,
-    #         traversing_object,
-    #         viewer
-    #     )
-
     @staticmethod
     def format_exit_key(exit_obj):
         return exit_obj.db_key.strip().lower()
-
-    # @staticmethod
-    # def _get_message(message):
-    #     return message
-    #
-    # @staticmethod
-    # def _get_o_message(message, traversing_object, viewer):
-    #     if not message:
-    #         return None
-    #     return "{0} {1}".format(traversing_object.get_display_name(viewer),
-    #                             message)
 
     pass

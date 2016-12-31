@@ -21,7 +21,7 @@ class Construct(Object):
         :return:
         """
         if not is_exit(moved_obj) and self.location != source_location:
-            moved_obj.move_to(self.location)
+            moved_obj.move_to(self.location, quiet=True, move_hooks=False)
 
     def at_cmdset_get(self, **kwargs):
         if "force_init" in kwargs or \

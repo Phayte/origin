@@ -50,6 +50,11 @@ class Character(DefaultCharacter):
         )
 
     def announce_move_to(self, source_location):
+        # silence the announcement and shift it to after the move
+        pass
+
+    def at_after_move(self, source_location):
+        super(Character, self).at_after_move(source_location)
         self._announce_arrive(
             self.location,
             self.last_exit
