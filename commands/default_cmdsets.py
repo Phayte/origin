@@ -13,7 +13,7 @@ to add/remove commands from the default lineup. You can create your
 own cmdsets by inheriting from them or directly from `evennia.CmdSet`.
 
 """
-
+from commands.exits import CmdOpenCloseExit
 from evennia import default_cmds
 
 from commands.construct import CmdConstruct, CmdBoard
@@ -35,6 +35,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         # TODO: Fix this later
         self.add(CmdConstruct)
         self.add(CmdBoard)
+        self.add(CmdOpenCloseExit)
         #
         # any commands you add below will overload the default ones.
         #

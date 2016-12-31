@@ -4,6 +4,7 @@ from evennia.utils.create import create_object
 
 from commands.command import Command, ExitCommand
 from typeclasses.exits import Exit
+from utils.utils import is_exit, is_construct
 
 
 class ConstructExitCmdSet(CmdSet):
@@ -43,19 +44,21 @@ class CmdConstruct(Command):
     help_category = "Construct"
 
     def func(self):
+        # noinspection PyUnresolvedReferences
+        caller = self.caller
         construct = create_object(
             "typeclasses.construct.Construct",
             key="Ship",
-            location=self.caller.location
+            location=caller.location
         )
-        self.caller.msg("Created construct #{0}".format(construct.id))
+        caller.msg("Created construct #{0}".format(construct.id))
 
         construct_module = construct.create_module("Airlock Room")
-        self.caller.msg("Created module #{0}".format(construct_module.id))
+        caller.msg("Created module #{0}".format(construct_module.id))
 
         construct_exit = construct.create_exit("Airlock Exit",
                                                construct_module)
-        self.caller.msg("Created exit #{0}".format(construct_exit.id))
+        caller.msg("Created exit #{0}".format(construct_exit.id))
 
 
 class CmdBoard(ObjManipCommand):
@@ -65,21 +68,27 @@ class CmdBoard(ObjManipCommand):
     def func(self):
         caller = self.caller
         if not self.args:
-            caller.msg("Usage: board ship[/entrance]")
+            caller.msg("Usage: board construct[/exit]")
             return
 
         construct_name = self.lhs_objattr[0]['name']
         exit_name = self.lhs_objattr[0]['attrs']
 
         if len(exit_name) > 1:
-            caller.msg("You can only specify one entrance.")
+            caller.msg("You can only specify one exit.")
 
-        construct = self.caller.search(construct_name)
+        construct = caller.search(construct_name)
         if not construct:
             return
+        if not is_construct(construct):
+            caller.msg("That is not a valid construct.")
+            return
 
-        construct_exit = self.caller.search(exit_name[0], location=construct)
+        construct_exit = caller.search(exit_name[0], location=construct)
         if not construct_exit:
+            return
+        if not is_exit(construct_exit):
+            caller.msg("That is not a valid exit.")
             return
 
         caller.execute_cmd(construct.format_exit_cmd_key(construct_exit))

@@ -10,7 +10,7 @@ from evennia.objects.objects import DefaultExit
 from evennia.utils import lazy_property
 
 from commands.command import ExitCommand
-from handlers.exits import ExitRoleplayHandler, ExitAccessHandler
+from handlers.exits import ExitBaseHandler, ExitControlHandler
 
 
 class Exit(DefaultExit):
@@ -42,12 +42,6 @@ class Exit(DefaultExit):
     exit_command = ExitCommand
 
     def at_object_creation(self):
-        """
-        Departs will always be used since that is the exit tied with where players were last
-        at. However, the arrival message will need to be deteremined by if return_exit exists.
-
-        :return:
-        """
         self.return_exit = None
 
     def at_traverse(self, traversing_object, destination):
@@ -66,10 +60,10 @@ class Exit(DefaultExit):
 
         if exit_obj:
             for obj in location.contents:
-                if obj == self:
-                    obj.msg(exit_obj.rp.get_success_depart())
+                if obj == traversing_object:
+                    obj.msg(exit_obj.rp.get_fail_depart())
                 else:
-                    obj.msg(exit_obj.rp.get_o_success_depart(self, obj))
+                    obj.msg(exit_obj.rp.get_o_fail_depart(self, obj))
 
             del traversing_object.ndb.last_exit
         else:
@@ -83,25 +77,25 @@ class Exit(DefaultExit):
         return True
 
     # region Properties
-    @property
-    def return_exit(self):
+    def return_exit_get(self):
         return self.db.return_exit
 
-    @return_exit.setter
-    def return_exit(self, value):
+    def return_exit_set(self, value):
         self.db.return_exit = value
 
-    @return_exit.deleter
-    def return_exit(self):
+    def return_exit_del(self):
         del self.db.return_exit
 
+    return_exit = property(return_exit_get, return_exit_set, return_exit_del)
+
     @lazy_property
-    def access(self):
-        return ExitAccessHandler(self)
+    def control(self):
+        return ExitControlHandler(self)
 
     @lazy_property
     def rp(self):
-        return ExitRoleplayHandler(self)
+        return ExitBaseHandler(self)
+
     # endregion
 
     @staticmethod

@@ -6,6 +6,9 @@ functions.
                of parameters and will return the first non-None parameter
 """
 
+# TODO: Tests and comments
+from evennia.utils import inherits_from
+
 
 def is_none(*args):
     if len(args) == 0:
@@ -19,4 +22,10 @@ def is_none(*args):
 
 
 def is_exit(obj):
-    return obj.destination
+    from typeclasses.exits import Exit
+    return obj.destination and inherits_from(obj, Exit)
+
+
+def is_construct(obj):
+    from typeclasses.construct import Construct
+    return inherits_from(obj, Construct)

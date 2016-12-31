@@ -6,11 +6,11 @@ class Handler(object):
 
         if not obj.attributes.has(self.DB_HANDLER_NAME):
             obj.attributes.add(self.DB_HANDLER_NAME, {})
-        self.db_dict = obj.attributes.get(self.DB_HANDLER_NAME)
+        self.db = DBHandler(obj.attributes.get(self.DB_HANDLER_NAME))
 
-        if not self.initialized:
+        if not self.db.initialized:
             self.at_handler_creation()
-            self.initialized = True
+            self.db.initialized = True
 
     def at_handler_creation(self):
         pass
@@ -18,8 +18,13 @@ class Handler(object):
     def at_force(self):
         self.at_handler_creation()
 
+
+class DBHandler(object):
+    def __init__(self, db_dict):
+        self.db_dict = db_dict
+
     def __getattr__(self, item):
-        if item == "obj" or item == "db_dict":
+        if item == "db_dict":
             try:
                 return object.__getattribute__(self, item)
             except AttributeError:
@@ -28,14 +33,13 @@ class Handler(object):
             return self.db_dict[item] if item in self.db_dict else None
 
     def __setattr__(self, key, value):
-        if key == "obj" or key == "db_dict":
+        if key == "db_dict":
             object.__setattr__(self, key, value)
         else:
-            print("Set")
             self.db_dict[key] = value
 
     def __delattr__(self, item):
-        if item == "obj" or item == "db_dict":
+        if item == "db_dict":
             object.__delattr__(self, item)
         else:
             del self.db_dict[item]
