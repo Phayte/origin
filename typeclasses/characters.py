@@ -30,59 +30,59 @@ class Character(DefaultCharacter):
     at_post_puppet - Echoes "PlayerName has entered the game" to the room.
 
     """
-
-    @property
-    def last_exit(self):
-        return self.ndb.last_exit
-
-    @last_exit.setter
-    def last_exit(self, value):
-        self.ndb.last_exit = value
-
-    @last_exit.deleter
-    def last_exit(self):
-        del self.ndb.last_exit
-
-    def announce_move_from(self, destination):
-        self._announce_depart(
-            self.location,
-            self.last_exit
-        )
-
-    def announce_move_to(self, source_location):
-        # silence the announcement and shift it to after the move
-        pass
-
-    def at_after_move(self, source_location):
-        super(Character, self).at_after_move(source_location)
-        self._announce_arrive(
-            self.location,
-            self.last_exit
-        )
-
-    def _announce_depart(self, location, exit_obj):
-        if exit_obj:
-            for obj in location.contents:
-                if obj == self:
-                    obj.msg(exit_obj.rp.get_success_depart())
-                else:
-                    obj.msg(exit_obj.rp.get_o_success_depart(self, obj))
-        else:
-            for obj in location.contents:
-                if obj != self:
-                    obj.msg("{0} has disappeared.".format(
-                        self.get_display_name(obj)))
-
-    def _announce_arrive(self, location, exit_obj):
-        if exit_obj:
-            for content_obj in location.contents:
-                if content_obj == self:
-                    content_obj.msg(exit_obj.rp.get_arrive())
-                else:
-                    content_obj.msg(exit_obj.rp.get_o_arrive(self, content_obj))
-        else:
-            self.msg("Have Not")
-            for content_obj in location.contents:
-                if content_obj != self:
-                    content_obj.msg("{0} has appeared.".format(
-                        self.get_display_name(content_obj)))
+    #
+    # @property
+    # def last_exit(self):
+    #     return self.ndb.last_exit
+    #
+    # @last_exit.setter
+    # def last_exit(self, value):
+    #     self.ndb.last_exit = value
+    #
+    # @last_exit.deleter
+    # def last_exit(self):
+    #     del self.ndb.last_exit
+    #
+    # def announce_move_from(self, destination):
+    #     self._announce_depart(
+    #         self.location,
+    #         self.last_exit
+    #     )
+    #
+    # def announce_move_to(self, source_location):
+    #     # silence the announcement and shift it to after the move
+    #     pass
+    #
+    # def at_after_move(self, source_location):
+    #     super(Character, self).at_after_move(source_location)
+    #     self._announce_arrive(
+    #         self.location,
+    #         self.last_exit
+    #     )
+    #
+    # def _announce_depart(self, location, exit_obj):
+    #     if exit_obj:
+    #         for obj in location.contents:
+    #             if obj == self:
+    #                 obj.msg(exit_obj.rp.get_success_depart())
+    #             else:
+    #                 obj.msg(exit_obj.rp.get_o_success_depart(self, obj))
+    #     else:
+    #         for obj in location.contents:
+    #             if obj != self:
+    #                 obj.msg("{0} has disappeared.".format(
+    #                     self.get_display_name(obj)))
+    #
+    # def _announce_arrive(self, location, exit_obj):
+    #     if exit_obj:
+    #         for content_obj in location.contents:
+    #             if content_obj == self:
+    #                 content_obj.msg(exit_obj.rp.get_arrive())
+    #             else:
+    #                 content_obj.msg(exit_obj.rp.get_o_arrive(self, content_obj))
+    #     else:
+    #         self.msg("Have Not")
+    #         for content_obj in location.contents:
+    #             if content_obj != self:
+    #                 content_obj.msg("{0} has appeared.".format(
+    #                     self.get_display_name(content_obj)))

@@ -10,7 +10,8 @@ from evennia.objects.objects import DefaultExit
 from evennia.utils import lazy_property
 
 from commands.command import ExitCommand
-from handlers.exits import ExitBaseHandler, ExitControlHandler
+from evennia.utils.create import create_object
+from handlers.exits import ExitMessageHandler, ExitControlHandler, ExitLinkHandler
 
 
 class Exit(DefaultExit):
@@ -41,9 +42,6 @@ class Exit(DefaultExit):
 
     exit_command = ExitCommand
 
-    def at_object_creation(self):
-        self.return_exit = None
-
     def at_traverse(self, traversing_object, destination):
 
         source_location = traversing_object.location
@@ -71,35 +69,31 @@ class Exit(DefaultExit):
 
     # noinspection PyMethodOverriding
     def delete(self):
-        if self.return_exit:
-            super(Exit, self.return_exit).delete()
+        if self.link.return_exit:
+            super(Exit, self.link.return_exit).delete()
         super(Exit, self).delete()
         return True
 
     # region Properties
-    def return_exit_get(self):
-        return self.db.return_exit
-
-    def return_exit_set(self, value):
-        self.db.return_exit = value
-
-    def return_exit_del(self):
-        del self.db.return_exit
-
-    return_exit = property(return_exit_get, return_exit_set, return_exit_del)
-
     @lazy_property
-    def control(self):
-        return ExitControlHandler(self)
+    def link(self):
+        return ExitLinkHandler(self)
 
-    @lazy_property
-    def rp(self):
-        return ExitBaseHandler(self)
-
+    # @lazy_property
+    # def control(self):
+    #     return ExitControlHandler(self)
+    #
+    # @lazy_property
+    # def rp(self):
+    #     return ExitMessageHandler(self)
     # endregion
 
-    @staticmethod
-    def format_exit_key(exit_obj):
-        return exit_obj.db_key.strip().lower()
-
-    pass
+    @classmethod
+    def create_exit(cls, key, location, destination, aliases=None):
+        return create_object(
+            cls,
+            key=key,
+            location=location,
+            destination=destination,
+            aliases=aliases
+        )

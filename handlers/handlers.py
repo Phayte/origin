@@ -1,12 +1,18 @@
+from utils.utils import get_saver_dict
+
+
 class Handler(object):
     DB_HANDLER_NAME = "handler"
 
     def __init__(self, obj):
+        """
+
+        :type obj: typeclasses.exits.Exit
+        """
         self.obj = obj
 
-        if not obj.attributes.has(self.DB_HANDLER_NAME):
-            obj.attributes.add(self.DB_HANDLER_NAME, {})
-        self.db = DBHandler(obj.attributes.get(self.DB_HANDLER_NAME))
+        self.ndb = DBHandler(get_saver_dict(obj, self.DB_HANDLER_NAME, False))
+        self.db = DBHandler(get_saver_dict(obj, self.DB_HANDLER_NAME))
 
         if not self.db.initialized:
             self.at_handler_creation()
@@ -20,26 +26,18 @@ class Handler(object):
 
 
 class DBHandler(object):
-    def __init__(self, db_dict):
-        self.db_dict = db_dict
+    def __init__(self, db):
+        """
+
+        :type db: dict
+        """
+        object.__setattr__(self, "db", db)
 
     def __getattr__(self, item):
-        if item == "db_dict":
-            try:
-                return object.__getattribute__(self, item)
-            except AttributeError:
-                return None
-        else:
-            return self.db_dict[item] if item in self.db_dict else None
+        return self.db[item] if item in self.db else None
 
     def __setattr__(self, key, value):
-        if key == "db_dict":
-            object.__setattr__(self, key, value)
-        else:
-            self.db_dict[key] = value
+        self.db[key] = value
 
     def __delattr__(self, item):
-        if item == "db_dict":
-            object.__delattr__(self, item)
-        else:
-            del self.db_dict[item]
+        del self.db[item]

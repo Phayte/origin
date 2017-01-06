@@ -4,17 +4,56 @@ from utils.utils import is_none
 from utils import bits
 
 
-class ExitBaseHandler(Handler):
+class ExitLinkHandler(Handler):
+    DB_HANDLER_NAME = "exit_link_handler"
+
+    def __init__(self, exit_obj):
+        super(ExitLinkHandler, self).__init__(exit_obj)
+
+    def return_exit_get(self):
+        return self.db.return_exit
+
+    def return_exit_set(self, value):
+        self.db.return_exit = value
+
+    def return_exit_del(self):
+        del self.db.return_exit
+
+    return_exit = property(return_exit_get,
+                           return_exit_set,
+                           return_exit_del)
+
+    def pair_return_exit(self, key=None, aliases=None, copy_aliases=True):
+        key = is_none(key, self.obj.key)
+        if not aliases and copy_aliases:
+            aliases = self.obj.aliases.all()
+
+        if not self.return_exit:
+            self.return_exit = self.obj.create_exit(
+                key,
+                self.obj.destination,
+                self.obj.location,
+                aliases
+            )
+
+        self.return_exit.link.return_exit = self.obj
+
+        return self.return_exit
+
+
+
+class ExitMessageHandler(Handler):
     DB_HANDLER_NAME = "exit_rp_handler"
 
     def __init__(self, exit_obj):
-        super(ExitBaseHandler, self).__init__(exit_obj)
+        super(ExitMessageHandler, self).__init__(exit_obj)
 
         # TODO: Delete
         del self.db.initialized
 
     # noinspection PyAttributeOutsideInit
     def at_handler_creation(self):
+        # TODO: maybe just delete these all later?
         # TODO: set to none later
         self.db.on_success_arrive = "You have arrived."
         self.db.on_o_success_arrive = "has arrived."
@@ -28,7 +67,7 @@ class ExitBaseHandler(Handler):
         self.db.on_o_fail_depart = "fails to depart."
 
     def get_arrive(self):
-        arrive_exit = is_none(self.obj.return_exit, self.obj)
+        arrive_exit = is_none(self.obj.link.return_exit, self.obj)
         return self._get_message(arrive_exit.rp.db.on_success_arrive)
 
     def get_o_arrive(self, traversing_object, viewer):
@@ -48,18 +87,15 @@ class ExitBaseHandler(Handler):
             viewer
         )
 
-    def rp_get_fail_depart(self):
+    def get_fail_depart(self):
         return self._get_message(self.db.on_fail_depart)
 
-    def rp_get_o_fail_depart(self, traversing_object, viewer):
+    def get_o_fail_depart(self, traversing_object, viewer):
         return self._get_o_message(
             self.db.on_o_fail_depart,
             traversing_object,
             viewer
         )
-
-    get_fail_depart = rp_get_fail_depart
-    get_o_fail_depart = rp_get_o_fail_depart
 
     @staticmethod
     def _get_message(message):
@@ -82,6 +118,7 @@ class ExitControlHandler(Handler):
 
     STATE_OPENED = 0b1
     STATE_CLOSED = 0b10
+
     # [STATE_CLOSED (Close), STATE_COLLAPSED (Destroyed)]
     # # [STATE_OPEN (Open), STATE_LOCKED (Lock), STATE_COLLAPSED (Destroyed),
     # #  STATE_BREACHED (Destroyed)]
@@ -137,6 +174,7 @@ class ExitControlHandler(Handler):
 
     def downgrade(self, flag):
         self.db.options = bits.unset(self.db.options, flag)
+
     # endregion
 
     def open(self, caller):

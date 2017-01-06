@@ -10,21 +10,24 @@ from utils.utils import is_exit, is_construct
 class ConstructExitCmdSet(CmdSet):
     exit_priority = Exit.priority
 
-    def __init__(self, exit_objs, cmdsetobj=None, key=None,
-                 format_exit_cmd_key=None):
-        super(ConstructExitCmdSet, self).__init__(cmdsetobj, key)
+    def __init__(self, exit_objs, cmdset_obj=None, key=None,
+                 format_exit_name=None):
+        super(ConstructExitCmdSet, self).__init__(cmdset_obj, key)
 
         self.key = key
         self.priority = self.exit_priority
         self.duplicates = True
 
-        if not format_exit_cmd_key:
-            format_exit_cmd_key = self._format_exit_cmd_key
+        if not format_exit_name:
+            format_exit_name = self._format_exit_name
 
         for exit_obj in exit_objs:
-            cmd = ExitCommand(key=format_exit_cmd_key(exit_obj),
-                              # TODO Need to fix aliases
-                              aliases=exit_obj.aliases.all(),
+            key = format_exit_name(exit_obj.key)
+            aliases = \
+                [format_exit_name(alias) for alias in exit_obj.aliases.all()]
+
+            cmd = ExitCommand(key=key,
+                              aliases=aliases,
                               locks=str(exit_obj.locks),
                               auto_help=False,
                               destination=exit_obj.db_destination,
@@ -35,8 +38,8 @@ class ConstructExitCmdSet(CmdSet):
             self.add(cmd)
 
     @staticmethod
-    def _format_exit_cmd_key(exit_obj):
-        return exit_obj.db_key.strip().lower()
+    def _format_exit_name(exit_name):
+        return exit_name.strip().lower()
 
 
 class CmdConstruct(Command):
@@ -57,7 +60,8 @@ class CmdConstruct(Command):
         caller.msg("Created module #{0}".format(construct_module.id))
 
         construct_exit = construct.create_exit("Airlock Exit",
-                                               construct_module)
+                                               construct_module,
+                                               ['al'])
         caller.msg("Created exit #{0}".format(construct_exit.id))
 
 
@@ -84,14 +88,20 @@ class CmdBoard(ObjManipCommand):
             caller.msg("That is not a valid construct.")
             return
 
-        construct_exit = caller.search(exit_name[0], location=construct)
-        if not construct_exit:
-            return
-        if not is_exit(construct_exit):
-            caller.msg("That is not a valid exit.")
-            return
+        if len(exit_name) == 1:
+            construct_exit = caller.search(exit_name[0], location=construct)
+            if not construct_exit:
+                return
+            if not is_exit(construct_exit):
+                caller.msg("That is not a valid exit.")
+                return
+        else:
+            construct_exit = construct.default_exit
+            if not construct_exit:
+                caller.msg("There is no exit for the construct")
+                return
 
-        caller.execute_cmd(construct.format_exit_cmd_key(construct_exit))
+        caller.execute_cmd(construct.format_exit_name(construct_exit.key))
 
 
 class CmdSetConstruct(CmdSet):

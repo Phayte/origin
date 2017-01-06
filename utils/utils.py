@@ -29,3 +29,14 @@ def is_exit(obj):
 def is_construct(obj):
     from typeclasses.construct import Construct
     return inherits_from(obj, Construct)
+
+
+def get_saver_dict(obj, namespace, persist=True):
+    if persist:
+        attr_handler = obj.attributes
+    else:
+        attr_handler = obj.nattributes
+
+    if not attr_handler.has(namespace):
+        attr_handler.add(namespace, {})
+    return attr_handler.get(namespace)
